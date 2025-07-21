@@ -1,41 +1,41 @@
 import sqlite3
 import os
-from contextlib import contextmanager
 
 DB_PATH = 'data/receipts.db'
 
-@contextmanager
-def get_db_connection():
-    """Context manager for database connections."""
-    # Ensure the directory for the database exists.
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        yield conn
-    finally:
-        conn.close()
-
 def init_db():
-    """Initializes the database and creates the receipts table if it doesn't exist."""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS receipts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                vendor TEXT,
-                amount REAL,
-                date TEXT,
-                category TEXT
-            )
-        ''')
-        conn.commit()
+    os.makedirs('data', exist_ok=True)  # ✅ Make sure the 'data' folder exists
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS receipts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            vendor TEXT,
+            amount REAL,
+            date TEXT,
+            category TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
 def insert_receipt(data):
-    """Inserts a receipt record into the database."""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO receipts (vendor, amount, date, category)
-            VALUES (?, ?, ?, ?)
-        ''', (data.get('vendor'), data.get('amount'), data.get('date'), data.get('category')))
-        conn.commit()
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO receipts (vendor, amount, date, category)
+        VALUES (?, ?, ?, ?)
+    ''', (data['vendor'], data['amount'], data['date'], data.get('category')))
+    conn.commit()
+    conn.close()
+
+def get_all_receipts():
+    conn = sqlite3.connect('data/receipts.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT vendor, amount, date, category FROM receipts")
+    rows = cursor.fetchall()
+    conn.close()
+    return [
+        {'vendor': r[0], 'amount': r[1], 'date': r[2], 'category': r[3]}
+        for r in rows
+    ]
